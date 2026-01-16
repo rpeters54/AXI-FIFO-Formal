@@ -17,6 +17,6 @@ To run the provided checks, you will require the following tools:
 - Boolector: SMT solver called by SymbiYosys to run checks
 
 All of these are conveniently packaged with the Yosys OSS Design suite:
-![Instructions Here](https://yosyshq.readthedocs.io/projects/yosys/en/0.40/getting_started/installation.html)
+[Instructions Here](https://yosyshq.readthedocs.io/projects/yosys/en/0.40/getting_started/installation.html)
 
 ## 
