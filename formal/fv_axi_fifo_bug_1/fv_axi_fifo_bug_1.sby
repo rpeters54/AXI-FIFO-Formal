@@ -1,0 +1,21 @@
+[tasks]
+bmc
+prove
+cover
+
+[options]
+bmc:   mode bmc
+prove: mode prove
+cover: mode cover
+depth 12
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal axi_fifo_bug_1.v
+read -formal axi_fifo_wrapper.sv
+prep -top    axi_fifo_wrapper
+
+[files]
+../../rtl/
