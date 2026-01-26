@@ -97,15 +97,6 @@ module axi_fifo_wrapper #(
         // [TODO] the queue should never accept writes when full
     end
 
-    //===============================//
-    // AXI Compliance Checks
-    //===============================//
-
-    // data must be stable between cycles if signal is valid, but not read
-    always @(posedge s_aclk) if (f_past_valid) begin
-        // [TODO] if the output was valid last cycle, no data was read, and no reset occured:
-        //        data, strb, and valid should remain stable
-    end
 
     //===============================//
     // Data Integrity Checks
@@ -132,6 +123,24 @@ module axi_fifo_wrapper #(
     always @(posedge s_aclk) begin
         // [TODO] if we're reading, not resetting, and the read count matches
         //        the arbitrary index (f_watch_id), assert the output matches the shadow values
+    end
+
+    //===============================//
+    // AXI Compliance Checks
+    //===============================//
+
+    // data must be stable between cycles if signal is valid, but not read
+    always @(posedge s_aclk) if (f_past_valid) begin
+        // [TODO] if the output was valid last cycle, no data was read, and no reset occured:
+        //        data, strb, and valid should remain stable
+    end
+
+    //===============================//
+    // Coverage Properties
+    //===============================//
+
+    always @(*) if (f_past_valid) begin
+        // [TODO] add coverage properties for important cases
     end
 
     //===============================//
@@ -199,14 +208,6 @@ module axi_fifo_wrapper #(
         end
     end
     */
-
-    //===============================//
-    // Coverage Properties
-    //===============================//
-
-    always @(*) if (f_past_valid) begin
-        // [TODO] add coverage properties for important cases
-    end
 
 endmodule
 
