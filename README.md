@@ -74,7 +74,7 @@ This is almost always necessary for any formal checks, as it allows the solver t
 If this were not included, the solver could initialize the FIFO to an illegal state that would never occur in actual use.
 With that established, we can move on to the main tasks.
 
-1. FIFO Bound Checks
+### 1. FIFO Bound Checks
 
 The first FIFO seems to pass data properly but behaves illegally when full or empty.
 To prove this is incorrect, we can track reads and writes to the FIFO using a set of counters.
@@ -97,12 +97,12 @@ Add four sets of assertions to prove the following:
 - The write_count must be always greater than or equal to read_count.
 - The difference between the write_count and read_count can not exceed the FIFO's capacity.
 
-2. Data Integrity and AXI Compliance
+### 2. Data Integrity and AXI Compliance
 
 This FIFO behaves normally for a while, but eventually starts outputting corrupted data.
 To catch this bug we must prove that data always passes through unaltered.
 
-### Task 1:
+#### Task 1:
 
 The standard method to verify data integrity is to choose an arbitrary data transaction and prove that the read and write data matches.
 To handle the selection SBY provides the (*anyconst*) and (*anyseq*) modifiers.
@@ -116,7 +116,7 @@ Using f_watch_id, store the relevant write into the shadow variables, and later 
 - Capture data into f_shadow_data when it enters the FIFO at the write_count matching f_watch_id.
 - Assert that when read_count matches f_watch_id, the output data m_axis_tdata matches f_shadow_data.
 
-### Task 2:
+#### Task 2:
 
 Additionally, the AXI specification expects that when data is output, it remains stable until read.
 This requires tracking behavior across multiple cycles.
@@ -159,11 +159,11 @@ For example:
 Now that we can use \$past, add the following assertion:
 - If last cycle was not a reset, tvalid was high, and tready was low, the data (tdata) and control signals must be the same this cycle as they were the previous.
 
-3. Liveness Checks
+### 3. Liveness Checks
 
 This FIFO doesn't do anything, which suprisingly does not break our previous assertions.
 
-### Task 1:
+#### Task 1:
 
 To quickly verify that the FIFO is broken, we can quickly show that it can never send or receive data.
 Cover statements task the solver with finding a sequence of inputs that lead to some value being true.
@@ -189,7 +189,7 @@ TIP:
 make formal/fv_axi_fifo SBY_JOB_TYPE=cover
 ```
 
-### Task 2:
+#### Task 2:
 
 Covers are exceptionally useful for finding simple deadlocks, but they are not sufficient to prove that the system will always behave properly.
 For instance, a broken FIFO could sent and receive one packet of data before halting.
@@ -200,7 +200,7 @@ Add two sets of assertions to prove the following:
 - If data is written, it should eventually be valid at the output.
 - If the FIFO is not full, it should eventually be ready to accept new data.
 
-4. Extending BMC to an Unbounded Proof
+### 4. Extending BMC to an Unbounded Proof
 
 Even though we have proven that the FIFO should behave correctly, trying to run an unbounded inductive proof on the reference model will fail as-is.
 This is not because the reference implementation is wrong. Instead, the error is caused by the solver selecting unreached and invalid states during induction.
