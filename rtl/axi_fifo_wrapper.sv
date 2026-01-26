@@ -57,6 +57,7 @@ module axi_fifo_wrapper #(
     always @(posedge s_aclk) f_past_valid <= 1;
     always @(posedge s_aclk) if (!f_past_valid) assume (!s_aresetn);
 
+    localparam MAX_ITEMS = 2 ** DEPTH_EXP;
     wire f_reading = m_axis_tvalid && m_axis_tready;
     wire f_writing = s_axis_tvalid && s_axis_tready;
 
@@ -66,8 +67,7 @@ module axi_fifo_wrapper #(
     //===============================//
 
     // track the number of read and write transactions
-    reg [31:0] write_count;
-    reg [31:0] read_count;
+    int write_count, read_count;
 
     // increment for each valid read/write transaction
     always @(posedge s_aclk) begin
@@ -79,7 +79,14 @@ module axi_fifo_wrapper #(
         end
     end
 
+    int diff_count;
+    always @(*) begin
+        // [TODO] diff_count should track the difference between the number of
+        // writes and reads
+    end
+
     // fifo bound safety checks
+    // HINT: you should use diff_count ONLY for these assertions
     always @(*) if (f_past_valid) begin
         // [TODO] if the queue is empty, the output should be invalid
 
@@ -105,7 +112,7 @@ module axi_fifo_wrapper #(
     //===============================//
 
     // tells the solver to select an arbitrary constant value
-    (* anyconst *) reg [XLEN-1:0] f_watch_id;
+    (* anyconst *) int f_watch_id;
 
     // track arbitrary data as it passes through the fifo
     reg              f_shadow_valid;
@@ -124,7 +131,7 @@ module axi_fifo_wrapper #(
     // fifo data safety checks
     always @(posedge s_aclk) begin
         // [TODO] if we're reading, not resetting, and the read count matches
-        //        the arbitrary index, assert the output should match the shadows
+        //        the arbitrary index (f_watch_id), assert the output matches the shadow values
     end
 
     //===============================//
@@ -146,16 +153,19 @@ module axi_fifo_wrapper #(
 
     /*
     // assume the read and write counter will not overflow
+    always @(*) if (!f_past_valid) begin
+        assume (write_count == 0);
+        assume (read_count  == 0);
+        assume (f_watch_id  == 0);
+    end
     always @(*) begin
-        if (!f_past_valid) begin
-            assume (write_count == 0);
-            assume (read_count  == 0);
-            assume (f_watch_id  == 0);
-        end else begin
-            assume (write_count < 32'hFFFF_FFFF - 2 ** DEPTH_EXP);
-            assume (read_count  < 32'hFFFF_FFFF - 2 ** DEPTH_EXP);
-            assume (f_watch_id  < 32'hFFFF_FFFF - 2 ** DEPTH_EXP);
-        end
+        assume (write_count >= 0);
+        assume (read_count  >= 0);
+        assume (f_watch_id  >= 0);
+    end
+    int f_watch_diff;
+    always @(*) begin
+        f_watch_diff = write_count - f_watch_id;
     end
 
     // ensure that data is properly placed inside the queue
@@ -163,21 +173,21 @@ module axi_fifo_wrapper #(
     always @(*) if (f_past_valid) begin
         assume(dbg_axis_addr == internal_raddr);
 
-        if (write_count > f_watch_id && write_count <= f_watch_id + 2 ** DEPTH_EXP) begin
+        if (f_watch_diff > 0 && f_watch_diff <= MAX_ITEMS) begin
             assert(dbg_axis_tdata == f_shadow_data);
             assert(dbg_axis_tstrb == f_shadow_strb);
         end
 
         assert(dbg_axis_wptr == write_count[DEPTH_EXP:0]);
-        assert(dbg_axis_wptr - dbg_axis_rptr == write_count[DEPTH_EXP:0] - read_count[DEPTH_EXP:0]);
+        assert(dbg_axis_wptr - dbg_axis_rptr == diff_count[DEPTH_EXP:0]);
     end
 
     // ensure that the shadow value is only valid after
     // the location was written to 
     always @(*) if (f_past_valid) begin
-        if (write_count > f_watch_id) 
+        if (f_watch_diff > 0) 
             assert(f_shadow_valid);
-        if (write_count <= f_watch_id) 
+        if (f_watch_diff <= 0) 
             assert(!f_shadow_valid);
     end
 
