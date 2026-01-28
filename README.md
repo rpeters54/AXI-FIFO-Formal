@@ -14,9 +14,10 @@ This assignment provides a simple overview of using the SBY formal verification 
 It was designed with the following goals in mind:
 
 1. Provide hands on experience crafting assertions, assumptions, and cover properties for a design.
-2. Introduce (*anyconst*) and (*anyseq*) shadow logic for verifying data transactions.
-3. Gain experience with the \$past function to create assertions that rely on previous states.
-4. Understand how properties for a bmc must be strengthened to inductively prove a design.
+2. Teach safety and liveness properties, and show how both are necessary for a design to be "correct."
+3. Introduce (\* anyconst \*) and (\* anyseq \*) shadow logic for verifying data transactions.
+4. Gain experience with the \$past function to create assertions that rely on previous states.
+5. Understand how properties for a bmc must be strengthened to inductively prove a design.
 
 ## Dependencies:
 
@@ -46,21 +47,23 @@ make formal/impl-name SBY_JOB_TYPE=job-name
 
 ## Getting Started 
 
-Your primary task is to complete the `axi_fifo_wrapper.sv` file in the `rtl/` directory.
+Your task is to complete the `axi_fifo_wrapper.sv` file in the `rtl/` directory.
 Fill in the logic and assertions where \[TODO\] comments are present.
 To progress to the next step, running a bmc should fail on the bugged model, but pass on the reference.
 If at any point you get stuck, the `key` directory contains a reference implementation.
 
 ## Tasks
 
+### 0. Background
+
 Before adding any code, it is important to understand what the existing skeleton code does.
 The most important block is included below:
 
 ```verilog
-    reg f_past_valid;
-    initial                  f_past_valid  = 0;
-    always @(posedge s_aclk) f_past_valid <= 1;
-    always @(posedge s_aclk) if (!f_past_valid) assume (!s_aresetn);
+reg f_past_valid;
+initial                  f_past_valid  = 0;
+always @(posedge s_aclk) f_past_valid <= 1;
+always @(posedge *)      if (!f_past_valid) assume (!s_aresetn);
 ```
 
 This block includes an `assume` directive.
@@ -76,7 +79,7 @@ With that established, we can move on to the main tasks.
 
 ### 1. FIFO Bound Checks
 
-The first FIFO seems to pass data properly but behaves illegally when full or empty.
+The first FIFO (`rtl/axi_fifo_bug_1.v`) seems to pass data properly but behaves illegally when full or empty.
 To prove this is incorrect, we can track reads and writes to the FIFO using a set of counters.
 Using these counters, we can claim whether or not the FIFO behaves properly using assertions.
 
@@ -94,24 +97,24 @@ end
 Add four sets of assertions to prove the following:
 - The FIFO does not overflow (write when full) 
 - The FIFO does not underflow (read when empty).
-- The write_count must be always greater than or equal to read_count.
+- The difference between the write_count and read_count can never be negative.
 - The difference between the write_count and read_count can not exceed the FIFO's capacity.
 
 ### 2. Data Integrity and AXI Compliance
 
-This FIFO behaves normally for a while, but eventually starts outputting corrupted data.
+The second FIFO (`rtl/axi_fifo_bug_2.v`) behaves normally for a while, but eventually starts outputting corrupted data.
 To catch this bug we must prove that data always passes through unaltered.
 
 #### Task 1:
 
 The standard method to verify data integrity is to choose an arbitrary data transaction and prove that the read and write data matches.
-To handle the selection SBY provides the (*anyconst*) and (*anyseq*) modifiers.
-When applied to a variable, (*anyconst*) tells the solver it can pick any value, but that value must remain constant from cycle 0 to N of the bmc.
-(*anyseq*) provides a bit more flexibility, allowing the solver to change the variables value each cycle of the check.
-In our case, since we want to track a single transaction from start to finish, (*anyconst*) is the proper keyword.
+To handle the selection SBY provides the (\* anyconst \*) and (\* anyseq \*) modifiers.
+When applied to a variable, (\* anyconst \*) tells the solver it can pick any value, but that value must remain constant from cycle 0 to N of the bmc.
+(\* anyseq \*) provides a bit more flexibility, allowing the solver to change the variables value each cycle of the check.
+In our case, since we want to track a single transaction from start to finish, (\* anyconst \*) is the proper keyword.
 
 The testbench includes a few variables that are needed before setting up any assertions.
-You are expected to use the provided f_watch_id (an (* anyconst *) value) to track a specific arbitrary transaction.
+You are expected to use the provided f_watch_id (an (\* anyconst \*) value) to track a specific arbitrary transaction.
 Using f_watch_id, store the relevant write into the shadow variables, and later compare those saved items to the data read from the FIFO:
 - Capture data into f_shadow_data when it enters the FIFO at the write_count matching f_watch_id.
 - Assert that when read_count matches f_watch_id, the output data m_axis_tdata matches f_shadow_data.
@@ -130,30 +133,30 @@ Thus, any statement that uses \$past should have a precondition that checks if t
 
 For example:
 ```verilog
-    reg f_past_valid;
-    initial                  f_past_valid  = 0;
-    always @(posedge s_aclk) f_past_valid <= 1;
-    always @(posedge s_aclk) if (!f_past_valid) assume (!s_aresetn);
+reg f_past_valid;
+initial                  f_past_valid  = 0;
+always @(posedge s_aclk) f_past_valid <= 1;
+always @(*)              if (!f_past_valid) assume (!s_aresetn);
 
-    always @(*) begin
-        // INVALID
-        // $past can not be used in unclocked blocks
-    end
+always @(*) begin
+    // INVALID
+    // $past can not be used in unclocked blocks
+end
 
 
-    always @(posedge s_aclk) begin
-        // INVALID
-        // $past will return an undefined value on the first cycle
-    end
+always @(posedge s_aclk) begin
+    // INVALID
+    // $past will return an undefined value on the first cycle
+end
 
-    always @(posedge s_aclk) if (f_past_valid) begin
-        // VALID
-        // $past is safe to use here
+always @(posedge s_aclk) if (f_past_valid) begin
+    // VALID
+    // $past is safe to use here
 
-        // NOTE: This is only safe for one cycle into the past.
-        // If you want to look more than one cycle into the past,
-        // you must update f_past_valid to only be true after that many cycles.
-    end
+    // NOTE: This is only safe for one cycle into the past.
+    // If you want to look more than one cycle into the past,
+    // you must update f_past_valid to only be true after that many cycles.
+end
 ```
 
 Now that we can use \$past, add the following assertion:
@@ -161,11 +164,14 @@ Now that we can use \$past, add the following assertion:
 
 ### 3. Liveness Checks
 
-This FIFO doesn't do anything, which suprisingly does not break our previous assertions.
+The third FIFO (`rtl/axi_fifo_bug_3.v`) doesn't do anything, which suprisingly does not break our previous assertions.
+
+In fact, our current assertions are safety properties; they prove that the system can never reach an invalid state.
+A device that does absolutely nothing is technically safe. To show that the device *must* do something eventually, we need liveness properties.
 
 #### Task 1:
 
-To quickly verify that the FIFO is broken, we can quickly show that it can never send or receive data.
+We can use cover statements to quickly show that FIFO can never send or receive data to be sure that it is broken.
 Cover statements task the solver with finding a sequence of inputs that lead to some value being true.
 
 For example:
@@ -191,8 +197,9 @@ make formal/fv_axi_fifo SBY_JOB_TYPE=cover
 
 #### Task 2:
 
-Covers are exceptionally useful for finding simple deadlocks, but they are not sufficient to prove that the system will always behave properly.
-For instance, a broken FIFO could sent and receive one packet of data before halting.
+Covers are exceptionally useful for finding simple deadlocks, but they are not sufficient to prove liveness.
+For instance, a broken FIFO could send and receive one packet of data before halting.
+A 'live' system must run forever without halting.
 To prove the liveness property always holds, we must add some additional assertions.
 In this case, we need to show the FIFO attempts to make progress.
 
@@ -203,16 +210,25 @@ Add two sets of assertions to prove the following:
 ### 4. Extending BMC to an Unbounded Proof
 
 Even though we have proven that the FIFO should behave correctly, trying to run an unbounded inductive proof on the reference model will fail as-is.
-This is not because the reference implementation is wrong. Instead, the error is caused by the solver selecting unreached and invalid states during induction.
-During a proof of induction, the solver treats the assertions as assumptions and selects a series of N states that meet such requirements, before checking if the assertions hold in the N + 1 state.
-Unlike the bounded model check, where we force the first cycle to reset, induction does not need to start by resetting.
+This is not because the reference implementation is wrong. Instead, the error is caused by the solver selecting unreachable states during induction.
+During a proof of induction, the solver selects a series of N states that behave according to our assertions, before checking if the assertions hold in the N + 1 state.
+Unlike the bounded model check, where we force the first cycle to reset, induction does not necessarily start at cycle 0.
 
-This leads to three main issues with the checks:
+This leads to three main issues with our FIFO checks:
 - The solver can select a state when the read/write counts are out of sync with the internal read/write pointers
 - The solver can choose data points that overflow counters into the negatives, causing the checks to fail
 - The solver can have the shadow logic become valid at the improper time.
 
 To show the FIFO will always work, we must strengthen the assertions and assumptions so the solver can not start induction in an invalid state.
-For simplicity, these are included at the bottom of the file.
+This requires adding some extra debugging signals that expose the values of the FIFO's read and write pointers, as well as the FIFO's internal memory.
+With those values, we can include new assertions that bind our counters and shadow logic to the FIFO's internal state.
+
+For simplicity, all the checks are included at the bottom of the file.
 Uncomment these statements and verify that the reference axi_fifo passes the unbounded proof.
+
+TIP:
+```bash
+# To run "proof" on the reference:
+make formal/fv_axi_fifo SBY_JOB_TYPE=prove
+```
 
