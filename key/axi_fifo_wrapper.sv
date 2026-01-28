@@ -1,28 +1,28 @@
 
 module axi_fifo_wrapper #(
-    parameter XLEN      = 32,
-    parameter DEPTH_EXP = 2
+    parameter XLEN      = 32,                   // FIFO data width
+    parameter DEPTH_EXP = 2                     // Size of FIFO is 2 ^ DEPTH_EXP
 ) (
-    input                     s_aclk,
-    input                     s_aresetn,
+    input                     s_aclk,           // clock
+    input                     s_aresetn,        // active-low reset
 
-    input                     s_axis_tvalid,
-    output                    s_axis_tready,
+    input                     s_axis_tvalid,    // incoming data is valid
+    output                    s_axis_tready,    // the queue is ready to accept incoming data
 
-    input  [XLEN     - 1 : 0] s_axis_tdata,
-    input  [XLEN / 8 - 1 : 0] s_axis_tstrb,
+    input  [XLEN     - 1 : 0] s_axis_tdata,     // input data
+    input  [XLEN / 8 - 1 : 0] s_axis_tstrb,     // input byte-mask
 
-    input  [DEPTH_EXP -1 : 0] dbg_axis_addr,
-    output [DEPTH_EXP    : 0] dbg_axis_wptr,
+    input  [DEPTH_EXP -1 : 0] dbg_axis_addr,    // Debug signals used by prove.
+    output [DEPTH_EXP    : 0] dbg_axis_wptr,    // These aren't necessary for BMC.
     output [DEPTH_EXP    : 0] dbg_axis_rptr,
     output [XLEN     - 1 : 0] dbg_axis_tdata,
     output [XLEN / 8 - 1 : 0] dbg_axis_tstrb,
 
-    output                    m_axis_tvalid,
-    input                     m_axis_tready,
+    output                    m_axis_tvalid,    // output data is valid
+    input                     m_axis_tready,    // the receiver is reading the current data
 
-    output [XLEN     - 1 : 0] m_axis_tdata,
-    output [XLEN / 8 - 1 : 0] m_axis_tstrb
+    output [XLEN     - 1 : 0] m_axis_tdata,     // output data
+    output [XLEN / 8 - 1 : 0] m_axis_tstrb      // output byte-mask
 );
 
     axi_fifo #(
@@ -55,7 +55,7 @@ module axi_fifo_wrapper #(
     reg f_past_valid;
     initial                  f_past_valid  = 0;
     always @(posedge s_aclk) f_past_valid <= 1;
-    always @(posedge s_aclk) if (!f_past_valid) assume (!s_aresetn);
+    always @(*)              if (!f_past_valid) assume (!s_aresetn);
 
     localparam MAX_ITEMS = 2 ** DEPTH_EXP;
     wire f_reading = m_axis_tvalid && m_axis_tready;
