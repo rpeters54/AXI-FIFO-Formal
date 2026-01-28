@@ -63,7 +63,7 @@ The most important block is included below:
 reg f_past_valid;
 initial                  f_past_valid  = 0;
 always @(posedge s_aclk) f_past_valid <= 1;
-always @(posedge *)      if (!f_past_valid) assume (!s_aresetn);
+always @(*)              if (!f_past_valid) assume (!s_aresetn);
 ```
 
 This block includes an `assume` directive.
@@ -95,6 +95,7 @@ end
 ```
 
 **TODO**
+
 Build the counters and add four sets of assertions to prove the following:
 - The FIFO does not overflow (write when full) 
 - The FIFO does not underflow (read when empty).
@@ -115,6 +116,7 @@ When applied to a variable, (\* anyconst \*) tells the solver it can pick any va
 In our case, since we want to track a single transaction from start to finish, (\* anyconst \*) is the proper keyword.
 
 **TODO**
+
 The testbench includes a few variables that are needed before setting up any assertions.
 You are expected to use the provided f_watch_id (an (\* anyconst \*) value) to track a specific arbitrary transaction.
 Using f_watch_id, store the relevant write into the shadow variables, and later compare those saved items to the data read from the FIFO:
@@ -162,6 +164,7 @@ end
 ```
 
 **TODO**
+
 Now that we can use \$past, add the following assertion:
 - If last cycle was not a reset, tvalid was high, and tready was low, the data (tdata) and control signals must be the same this cycle as they were the previous.
 
@@ -188,13 +191,17 @@ end
 When sby is run in cover mode, it will try to find a way to make condition\_1 and condition\_2 true.
 If it can find a path, the cover run will return a .VCD trace that shows the way to reach this condition.
 Otherwise, the solver will return that this state is unreachable.
+For our case, we simply want to show that the FIFO can never write nor read.
 
 **TODO**
-For our case, we simply want to show that the FIFO can never write nor read.
-Add some cover statements and run on the reference FIFO and bugged FIFO.
 
-TIP:
+Add some cover statements that check if the FIFO can send and receive data, and run a cover check on the reference and bugged FIFO.
+
+> [!TIP]
 ```bash
+# To run "cover" on the bugged FIFO:
+make formal/fv_axi_fifo_bug_3 SBY_JOB_TYPE=cover
+
 # To run "cover" on the reference:
 make formal/fv_axi_fifo SBY_JOB_TYPE=cover
 ```
@@ -208,6 +215,7 @@ To prove the liveness property always holds, we must add some additional asserti
 In this case, we need to show the FIFO attempts to make progress.
 
 **TODO**
+
 Add two sets of assertions to prove the following:
 - If data is written, it should eventually be valid at the output.
 - If the FIFO is not full, it should eventually be ready to accept new data.
@@ -229,10 +237,11 @@ This requires adding some extra debugging signals that expose the values of the 
 With those values, we can include new assertions that bind our counters and shadow logic to the FIFO's internal state.
 
 **TODO**
+
 For simplicity, all the checks are included at the bottom of the file.
 Uncomment these statements and verify that the reference axi_fifo passes the unbounded proof.
 
-TIP:
+> [!TIP]
 ```bash
 # To run "proof" on the reference:
 make formal/fv_axi_fifo SBY_JOB_TYPE=prove
