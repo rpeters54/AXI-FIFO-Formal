@@ -81,10 +81,10 @@ With that established, we can move on to the main tasks.
 
 The first FIFO (`rtl/axi_fifo_bug_1.v`) seems to pass data properly but behaves illegally when full or empty.
 To prove this is incorrect, we can track reads and writes to the FIFO using a set of counters.
-Using these counters, we can claim whether or not the FIFO behaves properly using assertions.
+Based on these counters, we can add assertions to verify whether or not the FIFO behaves properly.
 
-When running sby in bmc mode, the `assert` function verifies that its input is true when run.
-If the input to the `assert` is ever false, the bmc fails and returns a .VCD trace of the steps that lead to failure.
+When running sby in bmc mode, the `assert` function establishes what outputs/state are illegal.
+If the solver finds a way to make the input to an `assert` false, the bmc fails and returns a .VCD trace of the steps that lead to failure.
 By adding assertions to track the movement of the counters, we can be certain that the FIFO never underflows or overflows.
 
 ```verilog
@@ -94,7 +94,8 @@ always @(*) begin
 end
 ```
 
-Add four sets of assertions to prove the following:
+**TODO**
+Build the counters and add four sets of assertions to prove the following:
 - The FIFO does not overflow (write when full) 
 - The FIFO does not underflow (read when empty).
 - The difference between the write_count and read_count can never be negative.
@@ -113,6 +114,7 @@ When applied to a variable, (\* anyconst \*) tells the solver it can pick any va
 (\* anyseq \*) provides a bit more flexibility, allowing the solver to change the variables value each cycle of the check.
 In our case, since we want to track a single transaction from start to finish, (\* anyconst \*) is the proper keyword.
 
+**TODO**
 The testbench includes a few variables that are needed before setting up any assertions.
 You are expected to use the provided f_watch_id (an (\* anyconst \*) value) to track a specific arbitrary transaction.
 Using f_watch_id, store the relevant write into the shadow variables, and later compare those saved items to the data read from the FIFO:
@@ -159,6 +161,7 @@ always @(posedge s_aclk) if (f_past_valid) begin
 end
 ```
 
+**TODO**
 Now that we can use \$past, add the following assertion:
 - If last cycle was not a reset, tvalid was high, and tready was low, the data (tdata) and control signals must be the same this cycle as they were the previous.
 
@@ -186,6 +189,7 @@ When sby is run in cover mode, it will try to find a way to make condition\_1 an
 If it can find a path, the cover run will return a .VCD trace that shows the way to reach this condition.
 Otherwise, the solver will return that this state is unreachable.
 
+**TODO**
 For our case, we simply want to show that the FIFO can never write nor read.
 Add some cover statements and run on the reference FIFO and bugged FIFO.
 
@@ -203,6 +207,7 @@ A 'live' system must run forever without halting.
 To prove the liveness property always holds, we must add some additional assertions.
 In this case, we need to show the FIFO attempts to make progress.
 
+**TODO**
 Add two sets of assertions to prove the following:
 - If data is written, it should eventually be valid at the output.
 - If the FIFO is not full, it should eventually be ready to accept new data.
@@ -223,6 +228,7 @@ To show the FIFO will always work, we must strengthen the assertions and assumpt
 This requires adding some extra debugging signals that expose the values of the FIFO's read and write pointers, as well as the FIFO's internal memory.
 With those values, we can include new assertions that bind our counters and shadow logic to the FIFO's internal state.
 
+**TODO**
 For simplicity, all the checks are included at the bottom of the file.
 Uncomment these statements and verify that the reference axi_fifo passes the unbounded proof.
 
