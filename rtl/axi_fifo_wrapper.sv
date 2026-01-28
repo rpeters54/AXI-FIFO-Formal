@@ -194,10 +194,7 @@ module axi_fifo_wrapper #(
     // ensure that the shadow value is only valid after
     // the location was written to 
     always @(*) if (f_past_valid) begin
-        if (f_watch_diff > 0) 
-            assert(f_shadow_valid);
-        if (f_watch_diff <= 0) 
-            assert(!f_shadow_valid);
+        assert(f_watch_diff > 0 == f_shadow_valid); 
     end
 
     // dbg signal must mirror the output if read_count == watch_id
