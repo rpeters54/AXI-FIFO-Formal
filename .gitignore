@@ -1,1 +1,12 @@
+# Python caches
+__pycache__/
+*.pyc
+
+# Virtual environments (local)
+venv/
+env/
+.env
+
+# System artifacts
+.DS_Store
 .nvim

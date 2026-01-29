@@ -27,7 +27,35 @@ To run the provided checks, you will require the following tools:
 - SymbiYosys: Formal Verification driver program
 - Boolector: SMT solver called by SymbiYosys to run checks
 
-All of these are conveniently packaged with the Yosys OSS Design suite:
+You can run these using the provided Dockerfile, or install them natively.
+
+### Running with Docker
+
+The repository includes a Dockerfile that will download and build all the dependencies you need to run the assignment.
+If you do not have Docker, you can install the Docker Desktop tool [HERE](https://docs.docker.com/desktop/).
+*Note: the installation options are at the bottom of the page under the "Next Steps" heading.*
+
+After you download and install Docker Desktop, run the app to start the Docker Daemon. This needs to be active for Docker containers to run.
+
+You can then build and enter the Docker container using the following commands:
+```bash
+# This builds the docker container
+docker build -t riscv-verification-env .
+
+# This starts the docker container
+docker run -it -v $(pwd):/assignment riscv-verification-env
+
+# To exit the docker container run:
+exit
+```
+
+Once inside the Docker container, you should have all the necessary dependencies to run the lab.
+
+### Native Installation
+
+If you want to install these tools natively, the Yosys OSS-CAD Suite includes tar files with all the necessary executables.
+Note: this is less likely to work that the Docker container since the tools you use may have different versions that those collected by the container.
+
 [Installation Instructions Here](https://yosyshq.readthedocs.io/projects/yosys/en/0.40/getting_started/installation.html)
 
 ## Running SymbiYosys

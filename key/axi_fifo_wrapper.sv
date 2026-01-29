@@ -171,7 +171,6 @@ module axi_fifo_wrapper #(
     always @(*) if (!f_past_valid) begin
         assume (write_count == 0);
         assume (read_count  == 0);
-        assume (f_watch_id  == 0);
     end
     always @(*) begin
         assume (write_count >= 0);
