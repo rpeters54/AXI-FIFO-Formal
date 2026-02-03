@@ -51,7 +51,7 @@ module axi_fifo #(
     always @(posedge s_aclk) begin
         if (!s_aresetn) begin
             w_fifo_wptr                              <= 0;
-        end else if (s_axis_tready && s_axis_tvalid) begin
+        end else if (w_writing) begin
             w_tdata_fifo[w_fifo_wptr[DEPTH_EXP-1:0]] <= s_axis_tdata;
             w_tstrb_fifo[w_fifo_wptr[DEPTH_EXP-1:0]] <= s_axis_tstrb;
             w_fifo_wptr                              <= w_fifo_wptr + 1;
@@ -83,21 +83,19 @@ module axi_fifo #(
             m_axis_tdata <= 0;
             m_axis_tstrb <= 0;
         end else begin
-
             if (w_reading) begin
                 w_fifo_rptr <= w_rptr_plus_1;
-            end
-
-            if (w_reading || (w_empty && w_writing)) begin
-                if (w_empty || (w_writing && (w_fifo_wptr == w_rptr_plus_1))) begin
-                    m_axis_tdata <= s_axis_tdata;
-                    m_axis_tstrb <= s_axis_tstrb;
+                if (w_writing && (w_fifo_wptr == w_rptr_plus_1)) begin
+                    m_axis_tdata <= &bad_counter ? 0 : s_axis_tdata;
+                    m_axis_tstrb <= &bad_counter ? 0 : s_axis_tstrb;
                 end else begin
                     m_axis_tdata <= &bad_counter ? 0 : w_tdata_fifo[w_rptr_plus_1[DEPTH_EXP-1:0]];
                     m_axis_tstrb <= &bad_counter ? 0 : w_tstrb_fifo[w_rptr_plus_1[DEPTH_EXP-1:0]];
                 end
+            end else if (w_empty && w_writing) begin
+                m_axis_tdata <= &bad_counter ? 0 : s_axis_tdata;
+                m_axis_tstrb <= &bad_counter ? 0 : s_axis_tstrb;
             end
-
         end
     end
 
