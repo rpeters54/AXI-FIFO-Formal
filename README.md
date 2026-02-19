@@ -1,6 +1,9 @@
-# AXI-Stream FIFO Formal Verification Assignment
 
-## Overview:
+Lab 1: AXI-Stream FIFO Formal Verification Assignment
+=====================================================
+
+Overview:
+---------
 
 This project involves the formal verification of a synchronous FIFO buffer with an AXI-Stream interface.
 Your goal is to write SymbiYosys assertions to verify the correctness of the design and detect bugs in broken implementations.
@@ -8,7 +11,8 @@ Your goal is to write SymbiYosys assertions to verify the correctness of the des
 The project includes a reference design (axi_fifo.v) and three buggy variants (axi_fifo_bug_*.v).
 You will implement verification logic in a wrapper module to prove the golden design correct and catch the errors in the buggy designs.
 
-## Goals:
+Goals:
+------
 
 This assignment provides a simple overview of using the SBY formal verification tool to prove correctness for verilog designs.
 It was designed with the following goals in mind:
@@ -19,7 +23,8 @@ It was designed with the following goals in mind:
 4. Gain experience with the \$past function to create assertions that rely on previous states.
 5. Understand how properties for a bmc must be strengthened to inductively prove a design.
 
-## Dependencies:
+Dependencies:
+-------------
 
 To run the provided checks, you will require the following tools:
 
@@ -58,7 +63,8 @@ Note: this is less likely to work that the Docker container since the tools you 
 
 [Installation Instructions Here](https://yosyshq.readthedocs.io/projects/yosys/en/0.40/getting_started/installation.html)
 
-## Running SymbiYosys
+Running SymbiYosys
+------------------
 
 This repo comes with an included makefile to build and run the formal checks in axi_fifo_wrapper.v against all the fifo implementations.
 The following commands are supported:
@@ -73,14 +79,16 @@ make formal/impl-name
 make formal/impl-name SBY_JOB_TYPE=job-name
 ```
 
-## Getting Started 
+Getting Started 
+---------------
 
 Your task is to complete the `axi_fifo_wrapper.sv` file in the `rtl/` directory.
 Fill in the logic and assertions where \[TODO\] comments are present.
 To progress to the next step, running a bmc should fail on the bugged model, but pass on the reference.
 If at any point you get stuck, the `key` directory contains a reference implementation.
 
-## Tasks
+Tasks
+-----
 
 ### 0. Background
 
@@ -274,4 +282,10 @@ Uncomment these statements and verify that the reference axi_fifo passes the unb
 # To run "proof" on the reference:
 make formal/fv_axi_fifo SBY_JOB_TYPE=prove
 ```
+
+Deliverables
+------------
+
+1. Include your updated `axi_fifo_wrapper.sv` formal checks file.
+2. Include a screenshot of a counterexample waveform for each bugged FIFO along with a couple sentences explaining what assertions caught the illegal behavior.
 
